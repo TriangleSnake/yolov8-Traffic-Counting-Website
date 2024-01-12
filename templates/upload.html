@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload with Progress Bar</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>文件上传</h2>
+        <form action="/upload" id="uploadForm" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" class="form-control-file" id="fileInput" name="file">
+            </div>
+            <button type="submit" class="btn btn-primary">上传</button>
+        </form>
+
+        <!-- 进度条 -->
+        <div class="progress mt-3" style="height: 25px;">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;">
+                0%
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 jQuery 和 Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="static/uploads.js"></script> <!-- JavaScript 代码将放在这个文件中 -->
+</body>
+</html>
