@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Draw on Image</title>
+</head>
+
+<body>
+    <canvas id="imageCanvas" width="500" height="500" style="border:1px solid #000000;"></canvas>
+    <form id="pointsForm" method="POST" action="/draw">
+        <input type="hidden" id="pointsData" name="points">
+        <button type="submit">提交点坐标</button>
+    </form>
+    <script>
+        function getCookie(name) {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                let cookieParts = cookie.split('=');
+                if (cookieParts[0] === name) {
+                    return cookieParts[1];
+                }
+            }
+            return null;
+        }
+        let token = getCookie('token');
+        let path = "/uploads/" + token + "/snapshot.png";
+
+
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const canvas = document.getElementById('imageCanvas');
+            const ctx = canvas.getContext('2d');
+            const lines = [];
+            let currentLine = [];
+
+            // 加载并绘制图像
+            const image = new Image();
+
+            function drawPoint(point) {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI); // 画一个半径为 3 的圆点
+                ctx.fill();
+            }
+            image.onload = function () {
+
+
+                canvas.width = image.width;
+                canvas.height = image.height;
+
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            };
+            image.src = path;
+
+            canvas.addEventListener('click', (e) => {
+                currentLine.push({
+                    x: e.offsetX,
+                    y: e.offsetY
+                });
+                const point = currentLine[currentLine.length - 1];
+                drawPoint(point);
+                // 每次点击添加一个点，两个点绘制一条线
+                if (currentLine.length === 2) {
+                    drawLine(ctx, currentLine);
+                    lines.push([...currentLine]);
+                    currentLine = [];
+                }
+            });
+
+            function drawLine(ctx, line) {
+                ctx.beginPath();
+                ctx.moveTo(line[0].x, line[0].y);
+                ctx.lineTo(line[1].x, line[1].y);
+                ctx.stroke();
+            }
+
+            // 提交表单时，将线的坐标设置为隐藏输入字段的值
+            const form = document.getElementById('pointsForm');
+            form.addEventListener('submit', (e) => {
+                const pointsData = document.getElementById('pointsData');
+                pointsData.value = JSON.stringify(lines);
+            });
+        });
+    </script>
+</body>
+
+</html>
