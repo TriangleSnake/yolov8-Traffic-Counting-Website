@@ -1,0 +1,51 @@
+from ultralytics import YOLO
+import object_counter
+import sys
+import cv2
+import json
+
+try:
+    TOKEN = sys.argv[1]
+except:
+    TOKEN = "test"
+    
+FILETYPE = "mp4"
+VIDEO_PATH = "./uploads/"+TOKEN+"/video"
+AREA_PATH = "./uploads/"+TOKEN+"/area.txt"
+OUTPUT_PATH = "./uploads/"+TOKEN+"/output." + FILETYPE
+
+
+
+with open(AREA_PATH, 'r') as f:
+    area = json.loads(f.read())
+
+
+
+
+model = YOLO("yolov8x.pt")
+
+cap = cv2.VideoCapture(VIDEO_PATH)
+WIDTH = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+HEIGHT = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+counter = object_counter.ObjectCounter()
+counter.set_args(view_img=True,
+                 reg_pts=area,
+                 classes_names=model.names,
+                 draw_tracks=True)
+
+
+video_writer = cv2.VideoWriter(OUTPUT_PATH, cv2.VideoWriter_fourcc(*'MP4V'), 20,(WIDTH, HEIGHT))
+
+while cap.isOpened():
+    success, im0 = cap.read()
+    if not success:
+        print("Video frame is empty or video processing has been successfully completed.")
+        break
+    tracks = model.track(im0, persist=True, show=False)
+    im0 = counter.start_counting(im0, tracks)
+    video_writer.write(im0)
+
+cap.release()
+video_writer.release()
+cv2.destroyAllWindows()
