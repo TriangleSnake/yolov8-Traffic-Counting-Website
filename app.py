@@ -4,8 +4,8 @@ import object_counter
 import sys
 import cv2
 import json
+#import torch
 app = Flask(__name__)
-
 ALLOWED_EXTENSIONS = set(['mov','mp4','avi'])
 FILETYPE = "mp4"
 
@@ -16,8 +16,8 @@ def count(token):
 
     with open(area_path, 'r') as f:
         area = json.loads(f.read())
-    
-    model = YOLO("yolov8x.pt")
+    #torch.cuda.set_device(1)
+    model = YOLO("yolov8l.pt")
     
     cap = cv2.VideoCapture(video_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -28,14 +28,14 @@ def count(token):
                     reg_pts=area,
                     classes_names=model.names,
                     draw_tracks=True)
-    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'MP4V'), 20,(width, height))
+    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'X264'), 10,(width, height))
     while cap.isOpened():
-        ret, frame = cap.read()
+        for i in range(1):
+            ret, frame = cap.read()
         if not ret:
             break
         tracks = model.track(frame, persist=True, show=False)
         frame = counter.start_counting(frame, tracks)
-
         video_writer.write(frame)
 
         ret,buffer = cv2.imencode(".jpg", frame)
@@ -117,6 +117,7 @@ def upload():
         ret, frame = video.read()
         cv2.imwrite('./uploads/'+token+'/snapshot.png', frame)
         return make_response('OK', 200)
+    return make_response('Bad Filetype', 400)
 
 @app.route('/draw', methods=['GET', 'POST'])
 def draw():

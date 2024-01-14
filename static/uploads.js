@@ -21,9 +21,9 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     xhr.onload = function() {
         if (xhr.status === 200) {
             document.location.href = '/draw'
-            alert('文件上传成功');
+            alert('上傳成功');
         } else {
-            alert('文件上传失败');
+            alert('上傳失敗');
         }
     };
 
