@@ -158,4 +158,4 @@ def result():
 def output(token):
     return Response(count(token), mimetype='multipart/x-mixed-replace; boundary=frame')
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run("127.0.0.1",20000)
