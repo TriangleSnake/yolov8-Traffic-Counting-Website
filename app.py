@@ -17,7 +17,7 @@ def count(token):
     with open(area_path, 'r') as f:
         area = json.loads(f.read())
     #torch.cuda.set_device(1)
-    model = YOLO("yolov8l.pt")
+    model = YOLO("yolov8x.pt")
     
     cap = cv2.VideoCapture(video_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -30,7 +30,7 @@ def count(token):
                     draw_tracks=True)
     video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'X264'), 10,(width, height))
     while cap.isOpened():
-        for i in range(1):
+        for i in range(5):
             ret, frame = cap.read()
         if not ret:
             break
