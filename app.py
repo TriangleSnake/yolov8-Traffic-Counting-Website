@@ -1,47 +1,44 @@
 from flask import *
-from ultralytics import YOLO
-import object_counter
 import sys
 import cv2
 import json
+import os
+import subprocess
 #import torch
 app = Flask(__name__)
+app.secret_key = 'secret_key'
 ALLOWED_EXTENSIONS = set(['mov','mp4','avi'])
 FILETYPE = "mp4"
+FRAME_RATE = 5
+
+
 
 def count(token):
     video_path = 'uploads/'+token+'/video'
     area_path = 'uploads/'+token+'/area.txt'
     output_path = 'uploads/'+token+'/output.' + FILETYPE
-
+    result_path = 'uploads/'+token+'/result.txt'
+    frame_path = 'uploads/'+token+'/frame.jpg'
     with open(area_path, 'r') as f:
         area = json.loads(f.read())
     #torch.cuda.set_device(1)
-    model = YOLO("yolov8x.pt")
     
-    cap = cv2.VideoCapture(video_path)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    counter = object_counter.ObjectCounter()
-    counter.set_args(view_img=False,
-                    reg_pts=area,
-                    classes_names=model.names,
-                    draw_tracks=True)
-    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'X264'), 10,(width, height))
-    while cap.isOpened():
-        for i in range(5):
-            ret, frame = cap.read()
-        if not ret:
-            break
-        tracks = model.track(frame, persist=True, show=False)
-        frame = counter.start_counting(frame, tracks)
-        video_writer.write(frame)
-
-        ret,buffer = cv2.imencode(".jpg", frame)
-        frame = buffer.tobytes()
+    while not os.path.exists(result_path):
         
+        if os.path.exists(frame_path):
+                frame = cv2.imread(frame_path)
+        else :
+                frame = cv2.imread("uploads/"+token+"/snapshot.jpg")
+        try:
+            ret,buffer = cv2.imencode(".jpg", frame)
+        except:
+            continue
+        frame = buffer.tobytes()
         yield(b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
+    return "OK"
+    
+        
 
 def check_step(token):# 0.影片還沒上傳 1.畫線階段 2.數車階段 3.結果階段
     import os
@@ -77,6 +74,7 @@ def get_snapshot(token):
 
 @app.route('/')
 def index():
+    session.clear()
     if request.args.get('token'):
         if is_vaild_token(request.args.get('token')):
             response = make_response(redirect(url_for('upload_page')))
@@ -107,7 +105,7 @@ def upload():
 
     file = request.files['file']
     if file and allowed_filetype(file.filename):
-        import os
+        
         if not os.path.exists('./uploads/'+token):
             os.mkdir('./uploads/'+token)
         filepath = './uploads/'+request.cookies.get('token')+'/' + "video" #+file.filename.rsplit('.', 1)[1]
@@ -143,15 +141,21 @@ def draw():
 
 @app.route('/result')
 def result():
+    global sub_count
     token = request.cookies.get('token')
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
     if check_step(token) < 2:
         return redirect(url_for('draw'))
-    video_path = 'uploads/'+token+'/video'
     
+    if check_step(token) > 2:
+        return send_file('./uploads/'+token+'/output.mp4')    
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
+    if 'pid' in session:
+        sub_count.kill()
+    sub_count = subprocess.Popen(["python", "count.py", token])
+    session['pid'] = sub_count.pid
     return make_response("<img src=/uploads/"+token+"/frame>", 200)
 
 @app.route('/uploads/<path:token>/frame')
