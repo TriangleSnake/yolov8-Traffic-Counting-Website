@@ -28,7 +28,7 @@ def count(token):
         if os.path.exists(frame_path):
                 frame = cv2.imread(frame_path)
         else :
-                frame = cv2.imread("uploads/"+token+"/snapshot.jpg")
+                frame = cv2.imread("uploads/"+token+"/snapshot.png")
         try:
             ret,buffer = cv2.imencode(".jpg", frame)
         except:
