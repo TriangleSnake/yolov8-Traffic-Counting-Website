@@ -15,6 +15,7 @@
                 <input type="text" class="form-control" id="tokenField" placeholder="Enter your token here" name="token">
             </div>
             <button type="submit" class="btn btn-primary">提交</button>
+            <button type="submit" class="btn btn-primary" onclick="document.cookie='token='+document.getElementsByName('token')[0].value;location.href='/result'">查看先前結果</button>
         </form>
     </div>
 
