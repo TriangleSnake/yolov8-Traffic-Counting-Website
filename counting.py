@@ -1,6 +1,5 @@
 from ultralytics import YOLO
 import object_counter
-import sys
 import cv2
 import json
 
