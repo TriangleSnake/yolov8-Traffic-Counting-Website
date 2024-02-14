@@ -2,3 +2,5 @@
 *.png
 *.pt
 video
+/uploads/*
+token.txt

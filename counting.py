@@ -8,7 +8,7 @@ import json
 
 
 def run(token="test"):
-    model = YOLO("yolov8s.pt")
+    model = YOLO("yolov8x.pt")
     
     TOKEN = token    
     FILETYPE = "mp4"

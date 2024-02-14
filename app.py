@@ -1,19 +1,29 @@
 from flask import *
-import sys
 import cv2
 import json
 import os
-import subprocess
 import counting
 import threading
 #import torch
 app = Flask(__name__)
-app.secret_key = 'secret_key'
 ALLOWED_EXTENSIONS = set(['mov','mp4','avi'])
 FILETYPE = "mp4"
 FRAME_RATE = 5
-
+app.secret_key = "secret key"
 prev_frame = ""
+
+def check_step(token):# 0.影片還沒上傳 1.畫線階段 2.數車階段 3.結果階段
+    if not is_vaild_token(token):
+        return -1
+    
+    if os.path.exists('./uploads/'+token+'/result.txt'):
+        return 3
+    elif os.path.exists('./uploads/'+token+'/area.txt'):
+        return 2
+    elif os.path.exists('./uploads/'+token+'/snapshot.jpg'):
+        return 1
+    else:
+        return 0
 
 def count(token):
     global prev_frame
@@ -50,19 +60,7 @@ def count(token):
     
         
 
-def check_step(token):# 0.影片還沒上傳 1.畫線階段 2.數車階段 3.結果階段
-    import os
-    if not is_vaild_token(token):
-        return -1
-    
-    if os.path.exists('./uploads/'+token+'/result.txt'):
-        return 3
-    elif os.path.exists('./uploads/'+token+'/area.txt'):
-        return 2
-    elif os.path.exists('./uploads/'+token+'/snapshot.jpg'):
-        return 1
-    else:
-        return 0
+
 
 def is_vaild_token(token):
     with open('token.txt', 'r') as f:
@@ -148,7 +146,6 @@ def draw():
 
 @app.route('/result')
 def result():
-    global sub_count
     token = request.cookies.get('token')
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)

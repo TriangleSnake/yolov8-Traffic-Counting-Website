@@ -12,10 +12,10 @@
         <h2>Enter your Token</h2>
         <form action="." method="get">
             <div class="form-group">
-                <input type="text" class="form-control" id="tokenField" placeholder="Enter your token here" name="token">
+                <input type="text" class="form-control" id="tokenField" placeholder="Enter your token here" name="token" onchange="document.cookie='token='+document.getElementsByName('token')[0].value">
             </div>
             <button type="submit" class="btn btn-primary">提交</button>
-            <button type="submit" class="btn btn-primary" onclick="document.cookie='token='+document.getElementsByName('token')[0].value;location.href='/result'">查看先前結果</button>
+            <button type="button" class="btn btn-primary" onclick="location.href='/result'">查看先前結果</button>
         </form>
     </div>
 
