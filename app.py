@@ -110,7 +110,7 @@ def upload():
         return redirect(url_for('draw'))
 
     file = request.files['file']
-    if file and allowed_filetype(file.filename):
+    if file and allowed_filetype(file.filename.lower()):
         
         if not os.path.exists('./uploads/'+token):
             os.mkdir('./uploads/'+token)
