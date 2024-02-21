@@ -110,7 +110,7 @@ def upload():
         return redirect(url_for('draw'))
 
     file = request.files['file']
-    if file and allowed_filetype(file.filename):
+    if file and allowed_filetype(file.filename.lower()):
         
         if not os.path.exists('./uploads/'+token):
             os.mkdir('./uploads/'+token)
@@ -140,6 +140,10 @@ def draw():
         response = make_response(redirect(url_for('result')))
         with open('./uploads/'+token+'/area.txt', 'w') as f:
             f.write(points)
+        try:
+            os.remove("./uploads/"+token+'/result.txt')
+        except:
+            pass
         return response
 
 
@@ -167,4 +171,4 @@ def output(token):
     ret, prev_frame = cv2.imencode(".jpg",prev_frame)
     return Response(count(token), mimetype='multipart/x-mixed-replace; boundary=frame')
 if __name__ == '__main__':
-    app.run("127.0.0.1",20000)
+    app.run("0.0.0.0",20000)

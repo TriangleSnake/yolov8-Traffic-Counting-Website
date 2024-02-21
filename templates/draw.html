@@ -25,15 +25,15 @@
             return null;
         }
         let token = getCookie('token');
-        let path = "/uploads/" + token + "/snapshot.jpg";
+        let path = "/uploads/" + token + "/snapshot.jpg?"+Math.random();
 
 
 
         document.addEventListener('DOMContentLoaded', (event) => {
             const canvas = document.getElementById('imageCanvas');
             const ctx = canvas.getContext('2d');
-            let lines = [];
             const area = [];
+            const drpt = [];
             let currentLine = [];
 
             // 加载并绘制图像
@@ -53,17 +53,19 @@
                     (e.clientX - rect.left) * scaleX,
                     (e.clientY - rect.top) * scaleY
                 ];
-
                 drawPoint(point);
                 currentLine.push(point);
-
+                drpt.push(point);
+                if (drpt.length>=2)drawLine([drpt[drpt.length-1],drpt[drpt.length-2]]);
+                if (drpt.length==4)drawLine([drpt[0],drpt[3]]);
                 // 每点击两次，存储一组两个点，并绘制直线
                 if (currentLine.length === 2) {
-                    drawLine(currentLine);
-                    lines.push(...currentLine);
+                    //drawLine(currentLine);
                     area.push(...currentLine)
                     currentLine = [];
                 }
+                console.log(drpt)
+                
             });
 
             function drawPoint(point) {
