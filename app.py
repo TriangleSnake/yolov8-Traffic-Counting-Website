@@ -4,6 +4,8 @@ import json
 import os
 import counting
 import threading
+import ffmpeg
+import shutil
 #import torch
 app = Flask(__name__)
 ALLOWED_EXTENSIONS = set(['mov','mp4','avi'])
@@ -24,6 +26,13 @@ def check_step(token):# 0.影片還沒上傳 1.畫線階段 2.數車階段 3.結
         return 1
     else:
         return 0
+
+def compress_video(token):
+    input_file = './uploads/'+token+'/video'
+    output_file = './uploads/'+token+'/video(compressed).mp4'
+    input_file = ffmpeg.input(input_file)
+    output_file = input_file.output(output_file, vcodec='libx264',crf=30,preset='ultrafast')
+    output_file.run()
 
 def count(token):
     global prev_frame
@@ -100,42 +109,58 @@ def upload_page():
         return make_response('Forbidden', 403)
     return render_template('upload.html')
 
-
 @app.post('/upload')
 def upload():
     token = request.cookies.get('token')
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
-    if check_step(token) > 0:
-        return redirect(url_for('draw'))
-
     file = request.files['file']
     if file and allowed_filetype(file.filename.lower()):
-        
-        if not os.path.exists('./uploads/'+token):
-            os.mkdir('./uploads/'+token)
-        filepath = './uploads/'+request.cookies.get('token')+'/' + "video" #+file.filename.rsplit('.', 1)[1]
+        if os.path.exists('./uploads/'+token):
+            shutil.rmtree('./uploads/'+token+'/')
+        os.mkdir('./uploads/'+token)
+        filepath = './uploads/'+ token +'/' + "video" #+file.filename.rsplit('.', 1)[1]
         file.save(filepath)
-        video = cv2.VideoCapture(filepath)
-        video.set(cv2.CAP_PROP_POS_MSEC, 5000)
-        ret, frame = video.read()
-        cv2.imwrite('./uploads/'+token+'/snapshot.jpg', frame)
-        return make_response('OK', 200)
+        threading.Thread(target=compress_video,args=(token,)).start()
+        return redirect(url_for('compressing'))
     return make_response('Bad Filetype', 400)
+
+@app.get('/compressing')
+def compressing():
+    token = request.cookies.get('token')
+    if not is_vaild_token(token):
+        return make_response('Forbidden', 403)
+    if check_step(token) > 0:
+        return redirect(url_for('draw'))
+    
+    if not os.path.exists('./uploads/'+token+'/video(compressed).mp4'):
+        return make_response('<br>Compressing</br><script>setTimeout(location.reload(),5000)</script>', 200)
+
+    filepath = './uploads/'+ token +'/' + "video(compressed).mp4"
+    video = cv2.VideoCapture(filepath)
+    video.set(cv2.CAP_PROP_POS_MSEC, 5000)
+    ret, frame = video.read()
+    cv2.imwrite('./uploads/'+token+'/snapshot.jpg', frame)
+
+    return redirect(url_for('draw'))
 
 @app.route('/draw', methods=['GET', 'POST'])
 def draw():
     token = request.cookies.get('token')
+    
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
     
     
-    if check_step(token) < 1:
+    if check_step(token) < 0:
         return redirect(url_for('upload_page'))
 
     if request.method == 'GET':
         return render_template('draw.html')
     elif request.method == 'POST':
+        if os.path.exists('./uploads/'+token+'/video(compressed)'):
+            os.remove('./uploads/'+token+'/video')
+            os.rename('./uploads/'+token+'/video(compressed).mp4','./uploads/'+token+'/video')
         points = request.form['points']
         response = make_response(redirect(url_for('result')))
         with open('./uploads/'+token+'/area.txt', 'w') as f:
@@ -171,4 +196,5 @@ def output(token):
     ret, prev_frame = cv2.imencode(".jpg",prev_frame)
     return Response(count(token), mimetype='multipart/x-mixed-replace; boundary=frame')
 if __name__ == '__main__':
-    app.run("0.0.0.0",20000)
+    app.run("127.0.0.1",20000)
+    #app.run("0.0.0.0",20000)

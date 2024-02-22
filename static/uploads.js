@@ -20,7 +20,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
 
     xhr.onload = function() {
         if (xhr.status === 200) {
-            document.location.href = '/draw'
+            document.location.href = '/compressing'
             alert('上傳成功');
         } else {
             alert('上傳失敗');
