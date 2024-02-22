@@ -202,6 +202,13 @@ def output(token):
     prev_frame = cv2.imread('uploads/'+token+'/snapshot.jpg')
     ret, prev_frame = cv2.imencode(".jpg",prev_frame)
     return Response(count(token), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/uploads/<path:token>/output.mp4')
+def send_video(token):
+    if not is_vaild_token(token):
+        return make_response('Hacker!!!',403)
+    return send_file('./uploads/'+token+'/output.mp4',as_attachment=True,download_name="test")
+
 if __name__ == '__main__':
     #app.run("127.0.0.1",20000)
     app.run("0.0.0.0",20000)
