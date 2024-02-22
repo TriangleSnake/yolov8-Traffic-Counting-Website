@@ -6,6 +6,7 @@ import counting
 import threading
 import ffmpeg
 import shutil
+import time
 #import torch
 app = Flask(__name__)
 ALLOWED_EXTENSIONS = set(['mov','mp4','avi'])
@@ -17,8 +18,9 @@ prev_frame = ""
 def check_step(token):# 0.影片還沒上傳 1.畫線階段 2.數車階段 3.結果階段
     if not is_vaild_token(token):
         return -1
-    
-    if os.path.exists('./uploads/'+token+'/result.txt'):
+    if os.path.exists('./uploads/' + token + '/result.txt'):
+        return 4
+    elif os.path.exists('./uploads/'+token+'/output.mp4'):
         return 3
     elif os.path.exists('./uploads/'+token+'/area.txt'):
         return 2
@@ -31,8 +33,11 @@ def compress_video(token):
     input_file = './uploads/'+token+'/video'
     output_file = './uploads/'+token+'/video(compressed).mp4'
     input_file = ffmpeg.input(input_file)
-    output_file = input_file.output(output_file, vcodec='libx264',crf=30,preset='ultrafast')
+    input_file = input_file.filter('scale', f"iw*{0.5}", f"ih*{0.5}")
+    output_file = input_file.output(output_file, vcodec='libx264',crf=30,preset='ultrafast',r=15)
     output_file.run()
+    with open("./uploads/"+token+"/compressed.txt","w") as f:
+        f.write("OK")
 
 def count(token):
     global prev_frame
@@ -48,22 +53,23 @@ def count(token):
     while not os.path.exists(result_path):
         try:
             frame = cv2.imread(frame_path)
-            cv2.putText(frame,"Processing...",(0,650),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2,cv2.LINE_AA)
-            cv2.putText(frame,"DO NOT CLOSE THE PAGE...",(0,700),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2,cv2.LINE_AA)
+            cv2.putText(frame,"Processing...",(0,300),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2,cv2.LINE_AA)
+            cv2.putText(frame,"DO NOT CLOSE THE PAGE...",(0,350),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2,cv2.LINE_AA)
             
             ret,buffer = cv2.imencode(".jpg", frame)
             prev_frame = buffer
         except:
             buffer = prev_frame
         frame = buffer.tobytes()
+        time.sleep(0.1)
+        print("sending...")
         yield(b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
     frame = cv2.imread(frame_path)
-    cv2.putText(frame,"DONE!",(0,650),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2,cv2.LINE_AA)
-    cv2.putText(frame,"Click to Download Output Video",(0,700),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2,cv2.LINE_AA)
+    cv2.putText(frame,"DONE!",(0,300),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2,cv2.LINE_AA)
+    cv2.putText(frame,"Click to Download Output Video",(0,350),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2,cv2.LINE_AA)
     ret,buffer =cv2.imencode(".jpg",frame)
     frame = buffer.tobytes()
     while 1:
-
         yield(b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
     
     
@@ -130,37 +136,37 @@ def compressing():
     token = request.cookies.get('token')
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
-    if check_step(token) > 0:
-        return redirect(url_for('draw'))
     
-    if not os.path.exists('./uploads/'+token+'/video(compressed).mp4'):
-        return make_response('<br>Compressing</br><script>setTimeout(location.reload(),5000)</script>', 200)
+    if not os.path.exists('./uploads/'+token+'/compressed.txt'):
+        return make_response('<br>Compressing</br><script>setTimeout("location.reload();",5000)</script>', 200)
 
     filepath = './uploads/'+ token +'/' + "video(compressed).mp4"
     video = cv2.VideoCapture(filepath)
     video.set(cv2.CAP_PROP_POS_MSEC, 5000)
     ret, frame = video.read()
     cv2.imwrite('./uploads/'+token+'/snapshot.jpg', frame)
-
     return redirect(url_for('draw'))
 
 @app.route('/draw', methods=['GET', 'POST'])
 def draw():
     token = request.cookies.get('token')
-    
     if not is_vaild_token(token):
         return make_response('Forbidden', 403)
-    
-    
-    if check_step(token) < 0:
+    if os.path.exists('./uploads/'+token+'/video(compressed).mp4'):
+        os.remove('./uploads/'+token+'/video')
+        os.rename('./uploads/'+token+'/video(compressed).mp4','./uploads/'+token+'/video')
+    try:
+        os.remove('./uploads/'+token+'/output.mp4')
+        os.remove('./uploads/'+token+'/result.txt')
+    except:
+        pass
+    if check_step(token) < 1:
         return redirect(url_for('upload_page'))
 
     if request.method == 'GET':
         return render_template('draw.html')
     elif request.method == 'POST':
-        if os.path.exists('./uploads/'+token+'/video(compressed)'):
-            os.remove('./uploads/'+token+'/video')
-            os.rename('./uploads/'+token+'/video(compressed).mp4','./uploads/'+token+'/video')
+        
         points = request.form['points']
         response = make_response(redirect(url_for('result')))
         with open('./uploads/'+token+'/area.txt', 'w') as f:
@@ -180,14 +186,15 @@ def result():
         return make_response('Forbidden', 403)
     if check_step(token) < 2:
         return redirect(url_for('draw'))
-    
-    if check_step(token) > 2:
+    '''
+    elif check_step(token) == 4:
         return send_file('./uploads/'+token+'/output.mp4',as_attachment=True)    
-    if not is_vaild_token(token):
-        return make_response('Forbidden', 403)
-    threading.Thread(target=counting.run,args=(token,)).start()
+    '''
+    if check_step(token)  < 3:
+        threading.Thread(target=counting.run,args=(token,)).start()
+    
     #subprocess.Popen(["python", "count.py", token])
-    return make_response("<img src=/uploads/"+token+"/frame><br><button onclick=location.reload()>運算完成後點我下載</button>", 200)
+    return make_response("<img src=/uploads/"+token+f"/frame><br><button onclick=\"location.href='/uploads/{token}/output.mp4'\">運算完成後點我下載</button>", 200)
 
 @app.route('/uploads/<path:token>/frame')
 def output(token):
@@ -196,5 +203,5 @@ def output(token):
     ret, prev_frame = cv2.imencode(".jpg",prev_frame)
     return Response(count(token), mimetype='multipart/x-mixed-replace; boundary=frame')
 if __name__ == '__main__':
-    app.run("127.0.0.1",20000)
-    #app.run("0.0.0.0",20000)
+    #app.run("127.0.0.1",20000)
+    app.run("0.0.0.0",20000)

@@ -205,8 +205,8 @@ class ObjectCounter:
         incount_label = 'In Count : ' + f'{self.in_counts}'
         outcount_label = 'OutCount : ' + f'{self.out_counts}'
         print(incount_label,outcount_label)
-        cv2.putText(self.im0, incount_label, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(self.im0, outcount_label, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(self.im0, incount_label, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(self.im0, outcount_label, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
         if self.env_check and self.view_img:
             cv2.namedWindow('Ultralytics YOLOv8 Object Counter')
