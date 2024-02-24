@@ -22,3 +22,5 @@ open http://localhost:20000/ on your browser
 2.Draw detection area
 ![](https://github.com/TriangleSnake/yolov8-Traffic-Counting-Website/blob/main/img/2.gif?raw=true)
 
+3.Start Detecting
+![](https://github.com/TriangleSnake/yolov8-Traffic-Counting-Website/blob/main/img/3.gif?raw=true)
